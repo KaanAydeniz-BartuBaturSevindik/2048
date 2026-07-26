@@ -33,14 +33,15 @@ jobs:
         run: |
           mkdir build
           cd build
-          # Doğru mimari kurulduğu için artık özel aramaya gerek yok, doğrudan çalışacak
           qt-cmake ..
           cmake --build .
 
       - name: Prepare Files for Deployment
         run: |
           mkdir -p public
-          echo "Searching for generated files..."
+          echo "==== INSIDE BUILD DIRECTORY ===="
+          ls -laR build/
+          echo "================================"
           find build -type f -name "*.wasm" -exec cp {} public/ \;
           find build -type f -name "*.js" -exec cp {} public/ \;
           HTML_FILE=$(find build -type f -name "*.html" | head -n 1)
