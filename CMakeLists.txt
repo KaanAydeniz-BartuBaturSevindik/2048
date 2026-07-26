@@ -20,6 +20,13 @@ qt_add_executable(2048
 
 target_link_libraries(2048 PRIVATE Qt6::Widgets)
 
+if (EMSCRIPTEN)
+    # This app uses QMessageBox::exec() (mode selection / win / game over dialogs),
+    # which requires Emscripten's Asyncify feature to work inside a WebAssembly build.
+    # Without this, those dialogs would freeze the browser tab.
+    target_link_options(2048 PRIVATE -sASYNCIFY -Os)
+endif()
+
 install(TARGETS 2048
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
