@@ -26,22 +26,21 @@ jobs:
         with:
           version: '6.5.3'
           target: 'desktop'
-          architecture: 'wasm_32'
+          architecture: 'wasm_singlethread'
           cache: 'true'
 
       - name: Build Project
         run: |
           mkdir build
           cd build
-          QT_WASM_CMAKE=$(find /home/runner/work -path "*/wasm_32/bin/qt-cmake" | head -n 1)
-          $QT_WASM_CMAKE ..
+          # Doğru mimari kurulduğu için artık özel aramaya gerek yok, doğrudan çalışacak
+          qt-cmake ..
           cmake --build .
 
       - name: Prepare Files for Deployment
         run: |
           mkdir -p public
           echo "Searching for generated files..."
-          ls -laR build/
           find build -type f -name "*.wasm" -exec cp {} public/ \;
           find build -type f -name "*.js" -exec cp {} public/ \;
           HTML_FILE=$(find build -type f -name "*.html" | head -n 1)
