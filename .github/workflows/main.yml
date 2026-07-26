@@ -1,57 +1,74 @@
-name: Qt WebAssembly Build and Deploy
+name: Deploy 2048 to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
 
+# Needed so the workflow can push the built site to the gh-pages branch
 permissions:
   contents: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Emscripten (WASM Compiler)
+      # Emscripten version must match the version Qt for WebAssembly was built with.
+      # Qt 6.8.x targets Emscripten 3.1.56 (see https://doc.qt.io/qt-6/wasm.html).
+      - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
-          version: '3.1.25'
+          version: 3.1.56
+          actions-cache-folder: emsdk-cache
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
+      # Installs Qt for WebAssembly (the required desktop Qt host tools are
+      # installed automatically by this action). "wasm_singlethread" is used
+      # because GitHub Pages does not send the COOP/COEP headers required
+      # for multithreaded WASM.
+      - name: Install Qt for WebAssembly
+        uses: jurplel/install-qt-action@v4
         with:
-          version: '6.5.3'
-          target: 'desktop'
-          architecture: 'wasm_singlethread'
-          cache: 'true'
+          version: '6.8.3'
+          host: 'all_os'
+          target: 'wasm'
+          arch: 'wasm_singlethread'
+          cache: true
 
-      - name: Build Project
+      - name: Configure (qt-cmake)
         run: |
-          mkdir build
-          cd build
-          qt-cmake -DCMAKE_TOOLCHAIN_FILE=$QT_PATH/lib/cmake/Qt6/qt.toolchain.cmake ..
-          cmake --build .
+          "${QT_ROOT_DIR}/bin/qt-cmake" -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Prepare Files for Deployment
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Prepare GitHub Pages site
         run: |
-          mkdir -p public
-          echo "==== INSIDE BUILD DIRECTORY ===="
-          ls -laR build/
-          echo "================================"
-          find build -type f -name "*.wasm" -exec cp {} public/ \;
-          find build -type f -name "*.js" -exec cp {} public/ \;
-          HTML_FILE=$(find build -type f -name "*.html" | head -n 1)
-          if [ -n "$HTML_FILE" ]; then
-            cp "$HTML_FILE" public/index.html
-          fi
+          set -e
+          mkdir -p site
+          cp build/2048.html site/index.html
+          cp build/2048.js site/
+          cp build/2048.wasm site/
+          # These files may or may not be generated depending on the Qt version;
+          # copy them if present, but don't fail the build if they aren't.
+          cp build/qtloader.js site/ 2>/dev/null || true
+          cp build/qtlogo.svg site/ 2>/dev/null || true
+          cp build/2048.data site/ 2>/dev/null || true
+          # Tell GitHub Pages not to run Jekyll processing on the output.
+          touch site/.nojekyll
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to gh-pages branch
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./public
-          force_orphan: true
+          publish_dir: ./site
+          publish_branch: gh-pages
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
