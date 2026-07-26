@@ -39,9 +39,14 @@ jobs:
       - name: Prepare Files for Deployment
         run: |
           mkdir -p public
-          cp build/*.wasm public/
-          cp build/*.js public/
-          cp build/*.html public/index.html
+          echo "Searching for generated files..."
+          ls -laR build/
+          find build -type f -name "*.wasm" -exec cp {} public/ \;
+          find build -type f -name "*.js" -exec cp {} public/ \;
+          HTML_FILE=$(find build -type f -name "*.html" | head -n 1)
+          if [ -n "$HTML_FILE" ]; then
+            cp "$HTML_FILE" public/index.html
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
