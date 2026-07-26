@@ -3,7 +3,7 @@ name: Qt WebAssembly Build and Deploy
 on:
   push:
     branches:
-      - main  # Change this to 'master' if your main branch is 'master'.
+      - main
 
 permissions:
   contents: write
@@ -14,13 +14,12 @@ jobs:
 
     steps:
       - name: Checkout Source Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Emscripten (WASM Compiler)
-        uses: mymindstorm/setup-emsdk@v12
+        uses: mymindstorm/setup-emsdk@v14
         with:
-          version: '3.1.25' # Stable version compatible with Qt 6.5 series
-          actions-cache-folder: 'emsdk-cache'
+          version: '3.1.25'
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
@@ -34,24 +33,18 @@ jobs:
         run: |
           mkdir build
           cd build
-          # If you are using a .pro file, use qmake:
           qmake ../2048.pro
           make
-          
-          # If you are using CMake, delete the 2 lines above and use these:
-          # qt-cmake ..
-          # cmake --build .
 
       - name: Prepare Files for Deployment
         run: |
           mkdir -p public
-          # Move the generated .wasm, .js, and .html files to the public folder
           cp build/*.wasm public/
           cp build/*.js public/
           cp build/*.html public/index.html
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./public
