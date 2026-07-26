@@ -10,15 +10,38 @@ MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent)
 {
     setWindowTitle("2048");
-    setFixedSize(420, 650);
-    auto *mainLayout = new QVBoxLayout(this);
+
+    // The whole game UI lives inside a fixed-size "content" widget, which is
+    // then centered inside the top-level window, instead of calling
+    // setFixedSize() directly on the top-level window.
+    //
+    // Reason: on Qt for WebAssembly, the top-level window is sometimes
+    // resized to the full browser viewport before the real container size
+    // has been reported back to Qt, which used to stretch every layout
+    // (rows/columns/buttons) apart. Keeping the actual board in its own
+    // fixed 420x650 child widget makes the layout look correct no matter
+    // what size the browser assigns to the top-level widget - any extra
+    // space just appears as empty margin around the centered board instead
+    // of stretching the game itself. This has no effect on the desktop
+    // build, where the window still ends up exactly 420x650.
+    auto *content = new QWidget(this);
+    content->setFixedSize(420, 650);
+    content->setStyleSheet("background-color: #faf8ef;");
+
+    setStyleSheet("background-color: #3c3a32;");
+
+    auto *outerLayout = new QGridLayout(this);
+    outerLayout->setContentsMargins(0, 0, 0, 0);
+    outerLayout->addWidget(content, 0, 0, Qt::AlignCenter);
+
+    auto *mainLayout = new QVBoxLayout(content);
     auto *headerLayout = new QHBoxLayout();
     auto *titleLayout = new QVBoxLayout();
 
-    titleLabel = new QLabel("2048", this);
+    titleLabel = new QLabel("2048", content);
     titleLabel->setStyleSheet("color: #776e65; font-size: 48px; font-weight: bold; background: transparent;");
 
-    subtitleLabel = new QLabel("Join the tiles, get to 2048!", this);
+    subtitleLabel = new QLabel("Join the tiles, get to 2048!", content);
     subtitleLabel->setStyleSheet("color: #776e65; font-size: 14px; background: transparent;");
 
     titleLayout->addWidget(titleLabel);
@@ -29,17 +52,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     auto *scoreLayout = new QHBoxLayout();
 
-    scoreLabel = new QLabel("Score\n0", this);
+    scoreLabel = new QLabel("Score\n0", content);
     scoreLabel->setAlignment(Qt::AlignCenter);
     setCellStyle(scoreLabel, 187, 173, 160, "white", 12, "bold", 6);
     scoreLabel->setFixedSize(70, 45);
 
-    bestScoreLabel = new QLabel("Best\n0", this);
+    bestScoreLabel = new QLabel("Best\n0", content);
     bestScoreLabel->setAlignment(Qt::AlignCenter);
     setCellStyle(bestScoreLabel, 187, 173, 160, "white", 12, "bold", 6);
     bestScoreLabel->setFixedSize(70, 45);
 
-    currentModeLabel = new QLabel("Current Mode\n0", this);
+    currentModeLabel = new QLabel("Current Mode\n0", content);
     currentModeLabel->setAlignment(Qt::AlignCenter);
     setCellStyle(currentModeLabel, 187, 173, 160, "white", 12, "bold", 6);
     currentModeLabel->setFixedSize(70, 45);
@@ -52,8 +75,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     mainLayout->addLayout(headerLayout);
     auto *buttonLayout = new QHBoxLayout();
-    QPushButton *undoButton = new QPushButton("Undo", this);
-    QPushButton *restartButton = new QPushButton("Restart", this);
+    QPushButton *undoButton = new QPushButton("Undo", content);
+    QPushButton *restartButton = new QPushButton("Restart", content);
     connect(undoButton, &QPushButton::clicked, this, &MainWindow::undoMove);
     connect(restartButton, &QPushButton::clicked, this, &MainWindow::restartGame);
 
@@ -61,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
     buttonLayout->addWidget(restartButton); 
     undoButton->setFocusPolicy(Qt::NoFocus); // restricting arrow keys 
     restartButton->setFocusPolicy(Qt::NoFocus);
-    QPushButton *modeButton = new QPushButton("Mode", this);
+    QPushButton *modeButton = new QPushButton("Mode", content);
     modeButton->setFocusPolicy(Qt::NoFocus);
     buttonLayout->addWidget(modeButton);
     connect(modeButton, &QPushButton::clicked, this, [this]() {
