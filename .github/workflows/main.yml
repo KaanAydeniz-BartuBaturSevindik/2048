@@ -42,6 +42,16 @@ jobs:
           arch: 'wasm_singlethread'
           cache: true
 
+      # aqtinstall (especially when combined with actions/cache) sometimes
+      # extracts Qt binaries without the executable bit set, which causes
+      # "Permission denied" (exit 126) when running qt-cmake or other tools.
+      - name: Fix Qt tool permissions
+        run: |
+          chmod -R +x "${QT_ROOT_DIR}/bin" || true
+          chmod -R +x "${QT_ROOT_DIR}/libexec" || true
+          chmod -R +x "${QT_HOST_PATH}/bin" || true
+          chmod -R +x "${QT_HOST_PATH}/libexec" || true
+
       - name: Configure (qt-cmake)
         run: |
           "${QT_ROOT_DIR}/bin/qt-cmake" -S . -B build -DCMAKE_BUILD_TYPE=Release
