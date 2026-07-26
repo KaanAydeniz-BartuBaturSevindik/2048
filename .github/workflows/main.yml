@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          qt-cmake ..
+          qt-cmake -DCMAKE_TOOLCHAIN_FILE=$QT_PATH/lib/cmake/Qt6/qt.toolchain.cmake ..
           cmake --build .
 
       - name: Prepare Files for Deployment
