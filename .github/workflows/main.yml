@@ -33,7 +33,8 @@ jobs:
         run: |
           mkdir build
           cd build
-          qt-cmake ..
+          QT_WASM_CMAKE=$(find /home/runner/work -path "*/wasm_32/bin/qt-cmake" | head -n 1)
+          $QT_WASM_CMAKE ..
           cmake --build .
 
       - name: Prepare Files for Deployment
